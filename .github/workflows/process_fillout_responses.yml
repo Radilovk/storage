@@ -22,19 +22,14 @@ jobs:
           "https://api.fillout.com/v1/api/forms/2akCiouB4Bus/submissions?afterDate=$(date -u -d '10 minutes ago' '+%Y-%m-%dT%H:%M:%SZ')" \
           -o submissions.json
 
-      - name: Extract client data and save submission
+      - name: Save submissions to repository
         run: |
           mkdir -p fillout_data
-          CLIENT_NAME=$(jq -r '.[0].fields.name // "unknown_client"' submissions.json)
-          SUBMISSION_DATE=$(date +'%Y%m%d_%H%M%S')
-          mv submissions.json fillout_data/"${CLIENT_NAME}_${SUBMISSION_DATE}.json"
-
-      - name: Commit and push submissions
-        run: |
+          mv submissions.json fillout_data/submissions_$(date +'%Y%m%d_%H%M%S').json
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add fillout_data/
-          git commit -m "New submission from Fillout"
+          git commit -m "New submissions from Fillout"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
