@@ -6,44 +6,43 @@ on:
       - sclients/**
 
 jobs:
-  fetch-and-save:
+  process-data:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Log trigger
-        run: echo "Webhook triggered. Fetching data from REST API."
-
-      - name: Fetch submissions from Fillout
+      - name: Validate and Set Default Values
         run: |
-          curl -H "Authorization: Bearer ${{ secrets.FILL_OUT_API_KEY }}" \
-          "https://api.fillout.com/v1/api/forms/2akCiouB4Bus/submissions?afterDate=$(date -u -d '10 minutes ago' '+%Y-%m-%dT%H:%M:%SZ')" \
-          -o submissions.json
-
-      - name: Validate submissions file
-        run: |
-          if [ ! -s submissions.json ]; then
-            echo "Error: No data retrieved from REST API."
-            exit 1
+          if [ -z "${{ github.event.client_payload.name }}" ]; then
+            echo "Name is missing. Setting default value."
+            echo "name=DefaultName" >> $GITHUB_ENV
+          else
+            echo "name=${{ github.event.client_payload.name }}" >> $GITHUB_ENV
           fi
+          if [ -z "${{ github.event.client_payload.age }}" ]; then
+            echo "Age is missing. Setting default value."
+            echo "age=0" >> $GITHUB_ENV
+          else
+            echo "age=${{ github.event.client_payload.age }}" >> $GITHUB_ENV
 
-      - name: Process and save submissions
+      - name: Log processed values
         run: |
-          mkdir -p fillout_data
-          jq -c '.[]' submissions.json | while read submission; do
-            id=$(echo "$submission" | jq -r '.id // "UnknownID"')
-            date=$(echo "$submission" | jq -r '.createdAt // "19700101T000000"' | sed 's/[^0-9]//g')
-            echo "$submission" > fillout_data/${id}_${date}.json
-          done
+          echo "Name: ${{ env.name }}"
+          echo "Age: ${{ env.age }}"
 
-      - name: Commit and push submissions
+      - name: Save client payload
+        run: |
+          mkdir -p sclients/
+          echo "{ \"name\": \"${{ env.name }}\", \"age\": \"${{ env.age }}\" }" > sclients/client_$(date +'%Y%m%d_%H%M%S').json
+
+      - name: Commit and Push Changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add fillout_data/
-          git commit -m "New submissions from Fillout"
+          git add sclients/
+          git commit -m "Add client data"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
