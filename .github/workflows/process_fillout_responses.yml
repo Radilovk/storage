@@ -1,4 +1,4 @@
-name: Process Fillout Submissions on File Trigger
+name: Process Fillout Submissions
 
 on:
   push:
@@ -22,15 +22,19 @@ jobs:
           "https://api.fillout.com/v1/api/forms/2akCiouB4Bus/submissions?afterDate=$(date -u -d '10 minutes ago' '+%Y-%m-%dT%H:%M:%SZ')" \
           -o submissions.json
 
+      - name: Validate submissions file
+        run: |
+          if [ ! -s submissions.json ]; then
+            echo "Error: No data retrieved from REST API."
+            exit 1
+          fi
+
       - name: Process and save submissions
         run: |
           mkdir -p fillout_data
           jq -c '.[]' submissions.json | while read submission; do
-            # Extract createdAt and sanitize it for the filename
-            date=$(echo "$submission" | jq -r '.createdAt' | sed 's/[^0-9]//g')
-            # Use ID or "Unknown" if no other identifier exists
-            id=$(echo "$submission" | jq -r '.id // "Unknown"')
-            # Save each submission as a separate file
+            id=$(echo "$submission" | jq -r '.id // "UnknownID"')
+            date=$(echo "$submission" | jq -r '.createdAt // "19700101T000000"' | sed 's/[^0-9]//g')
             echo "$submission" > fillout_data/${id}_${date}.json
           done
 
