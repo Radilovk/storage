@@ -12,10 +12,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Create directory and save data
+      - name: Log Incoming Data
         run: |
+          echo "Incoming Data:"
+          echo "${{ toJson(github.event.client_payload) }}"
+      
+      - name: Validate and Save Data
+        run: |
+          if [ -z "${{ github.event.client_payload.name }}" ]; then
+            echo "Error: Missing 'name' in client_payload."
+            exit 1
+          fi
+          if [ -z "${{ github.event.client_payload.age }}" ]; then
+            echo "Error: Missing 'age' in client_payload."
+            exit 1
+          fi
           mkdir -p sclients/
-          echo "${{ toJson(github.event.client_payload.data) }}" > sclients/client_$(date +'%Y%m%d_%H%M%S').json
+          echo "${{ toJson(github.event.client_payload) }}" > sclients/client_$(date +'%Y%m%d_%H%M%S').json
 
       - name: Commit and Push Changes
         run: |
