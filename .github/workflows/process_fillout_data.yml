@@ -48,13 +48,19 @@ jobs:
           echo "Converting submissions to plain text..."
           mkdir -p fillout_data
           jq -c '.responses[]' submissions.json | while read submission; do
+            # Извличане на ID, дата и име
             id=$(echo "$submission" | jq -r '.submissionId // "UnknownID"')
-            date=$(echo "$submission" | jq -r '.submissionTime // "1970-01-01T00:00:00"' | sed 's/[^0-9]//g')
+            raw_date=$(echo "$submission" | jq -r '.submissionTime // "1970-01-01T00:00:00"')
+            formatted_date=$(date -d "$raw_date" '+%d.%m.%Y %H:%M:%S' 2>/dev/null || echo "$raw_date")
             name=$(echo "$submission" | jq -r '.questions[] | select(.name=="Вашето име?") | .value // "UnknownClient"')
             name_safe=$(echo "$name" | sed 's/ /_/g')
-            content="Име: $name\nДата: $date\n"
+
+            # Генериране на текстово съдържание
+            content="Дата: $formatted_date\nИме: $name\n"
             content+=$(echo "$submission" | jq -r '.questions[] | "Въпрос: \(.name)\nОтговор: \(.value)\n"')
-            text_filename="${name_safe}_${date}.txt"
+
+            # Създаване на текстов файл
+            text_filename="${name_safe}_${formatted_date//[^0-9]}.txt"
             echo -e "$content" > fillout_data/$text_filename
           done
           echo "Text submissions saved in fillout_data:"
