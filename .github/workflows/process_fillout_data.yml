@@ -29,6 +29,9 @@ jobs:
           curl -H "Authorization: Bearer ${{ secrets.FILL_OUT_API_KEY }}" \
           "https://api.fillout.com/v1/api/forms/2akCiouB4Bus/submissions" \
           -o submissions.json
+          echo "Fetched submissions.json:"
+          ls -l
+          cat submissions.json || echo "submissions.json is empty or missing."
 
       # 4. Validate submissions.json
       - name: Validate submissions.json
@@ -36,7 +39,6 @@ jobs:
           echo "Validating submissions.json..."
           if [ -s submissions.json ]; then
             echo "submissions.json is not empty."
-            cat submissions.json
           else
             echo "Error: submissions.json is empty or invalid."
             exit 1
