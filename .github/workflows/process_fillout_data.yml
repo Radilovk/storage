@@ -1,8 +1,12 @@
 name: Process Submissions from Fillout
 
 on:
-  repository_dispatch:
-    types: [fillout_data]
+  workflow_dispatch:
+    inputs:
+      form_id:
+        description: 'Fillout Form ID'
+        required: true
+        default: '2akCiouB4Bus'
 
 jobs:
   process-submissions:
@@ -12,19 +16,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      # 4. Динамична проверка за нови записи
       - name: Fetch Submissions from Fillout API
         run: |
           echo "Fetching submissions from Fillout API..."
+          mkdir -p state/
+          last_processed=$(cat state/last_processed_time.txt 2>/dev/null || echo "1970-01-01T00:00:00Z")
+          FORM_ID="${{ github.event.inputs.form_id }}"
           curl -H "Authorization: Bearer ${{ secrets.FILL_OUT_API_KEY }}" \
-          "https://api.fillout.com/v1/api/forms/2akCiouB4Bus/submissions" \
+          "https://api.fillout.com/v1/api/forms/$FORM_ID/submissions?since=$last_processed" \
           -o submissions.json
+          date -u '+%Y-%m-%dT%H:%M:%SZ' > state/last_processed_time.txt
 
-      - name: Validate JSON
+      # 7. Валидиране на JSON структурата
+      - name: Validate JSON Structure
         run: |
-          if [ -s submissions.json ]; then
-            echo "JSON файлът е валиден и непразен."
+          if jq -e 'has("responses") and (.responses | length > 0)' submissions.json > /dev/null; then
+            echo "JSON структурата е валидна."
           else
-            echo "Error: submissions.json е празен или липсва."
+            echo "Error: Невалидна структура на submissions.json."
             exit 1
           fi
 
@@ -33,27 +43,21 @@ jobs:
           echo "Converting submissions to plain text..."
           mkdir -p fillout_data
           jq -c '.responses[]' submissions.json | while read submission; do
-            # Извличане на ID, дата и име
             id=$(echo "$submission" | jq -r '.submissionId // "UnknownID"')
             raw_date=$(echo "$submission" | jq -r '.submissionTime // "1970-01-01T00:00:00"')
             formatted_date=$(date -d "$raw_date" '+%d.%m.%Y %H:%M:%S' 2>/dev/null || echo "$raw_date")
             name=$(echo "$submission" | jq -r '.questions[] | select(.name=="Вашето име?") | .value // "UnknownClient"')
             name_safe=$(echo "$name" | sed 's/ /_/g')
 
-            # Създаване на уникално име на файла
             text_filename="fillout_data/${name_safe}_${formatted_date//[^0-9]}_${id}.txt"
 
-            # Проверка дали файлът вече съществува
             if [ -f "$text_filename" ]; then
               echo "File $text_filename already exists. Skipping..."
               continue
             fi
 
-            # Генериране на текстово съдържание
             content="Дата: $formatted_date\nИме: $name\n"
             content+=$(echo "$submission" | jq -r '.questions[] | "Въпрос: \(.name)\nОтговор: \(.value)\n"')
-
-            # Създаване на нов файл
             echo -e "$content" > "$text_filename"
             echo "File $text_filename created."
           done
@@ -64,8 +68,21 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add fillout_data/
-          git commit -m "Add processed submissions as plain text"
-          git push
+          git add fillout_data/ state/last_processed_time.txt
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit. Skipping commit step."
+          else
+            git commit -m "Add processed submissions and updated state"
+            git push
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Уведомление при успех или грешка
+      - name: Notify on Success
+        if: success()
+        run: echo "Workflow completed successfully. New submissions have been processed."
+
+      - name: Notify on Error
+        if: failure()
+        run: echo "Workflow failed. Please check logs for details."
