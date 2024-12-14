@@ -1,0 +1,7 @@
+{
+  "name": "Example Client",
+  "email": "example@example.com",
+  "address": "123 Main St, Exampleville, ECO",
+  "phone_number": "+123-456-7890",
+  "organization": "Example Org, Inc."
+}
