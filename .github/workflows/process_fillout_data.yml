@@ -12,34 +12,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Test API response
-        run: |
-          echo "Testing API response..."
-          curl -H "Authorization: Bearer ${{ secrets.FILL_OUT_API_KEY }}" \
-          "https://api.fillout.com/v1/api/forms/2akCiouB4Bus/submissions" \
-          | jq .
+      - name: Ignore submissions.json
+        run: echo "submissions.json" >> .gitignore
 
       - name: Fetch submissions from Fillout
         run: |
-          echo "Fetching submissions..."
           curl -H "Authorization: Bearer ${{ secrets.FILL_OUT_API_KEY }}" \
           "https://api.fillout.com/v1/api/forms/2akCiouB4Bus/submissions" \
           -o submissions.json
 
-      - name: Verify submissions.json
+      - name: Log JSON data
         run: |
-          if [ -f submissions.json ]; then
-            echo "submissions.json created successfully."
-            cat submissions.json
-          else
-            echo "Error: submissions.json was not created."
-            exit 1
-          fi
+          echo "Submissions JSON data:"
+          cat submissions.json
 
       - name: Process and Save Submissions
         run: |
           mkdir -p fillout_data
-          jq -c 'if type=="object" and .data then .data[] elif type=="array" then .[] else empty end' submissions.json | while read submission; do
+          jq -c 'if type=="array" then .[] elif .data then .data[] else empty end' submissions.json | while read submission; do
             id=$(echo "$submission" | jq -r '.id // "UnknownID"')
             date=$(echo "$submission" | jq -r '.createdAt // "19700101T000000"' | sed 's/[^0-9]//g')
             echo "$submission" > fillout_data/${id}_${date}.json
