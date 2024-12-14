@@ -28,28 +28,12 @@ jobs:
             exit 1
           fi
 
-      - name: Process and Save Submissions with Client Name and Date
-        run: |
-          echo "Processing submissions..."
-          mkdir -p fillout_data
-          jq -c '.responses[]' submissions.json | while read submission; do
-            id=$(echo "$submission" | jq -r '.submissionId // "UnknownID"')
-            date=$(echo "$submission" | jq -r '.submissionTime // "1970-01-01T00:00:00"' | sed 's/[^0-9]//g')
-            name=$(echo "$submission" | jq -r '.questions[] | select(.name=="Вашето име?") | .value // "UnknownClient"')
-            name_safe=$(echo "$name" | sed 's/ /_/g')
-            filename="${name_safe}_${date}.json"
-            echo "$submission" > fillout_data/$filename
-          done
-          echo "Processed submissions saved in fillout_data:"
-          ls -l fillout_data/
-
       - name: Save Submissions as Text Files
         run: |
           echo "Converting submissions to plain text..."
           mkdir -p fillout_data
           jq -c '.responses[]' submissions.json | while read submission; do
-            # Извличане на ID, дата и име
-            id=$(echo "$submission" | jq -r '.submissionId // "UnknownID"')
+            # Извличане на дата, име и въпроси
             raw_date=$(echo "$submission" | jq -r '.submissionTime // "1970-01-01T00:00:00"')
             formatted_date=$(date -d "$raw_date" '+%d.%m.%Y %H:%M:%S' 2>/dev/null || echo "$raw_date")
             name=$(echo "$submission" | jq -r '.questions[] | select(.name=="Вашето име?") | .value // "UnknownClient"')
@@ -71,7 +55,7 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add fillout_data/
-          git commit -m "Add processed submissions in JSON and plain text"
+          git commit -m "Add processed submissions as plain text"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
