@@ -1,4 +1,4 @@
-name: Process Fillout Submissions
+name: Webhook Trigger to Process Data
 
 on:
   repository_dispatch:
@@ -13,10 +13,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # 2. Log Webhook Trigger (Optional)
-      - name: Log Webhook Trigger
+      # 2. Create a Trigger File in sclients
+      - name: Create Trigger File
         run: |
-          echo "Webhook triggered successfully."
+          echo "Creating trigger file in sclients..."
+          mkdir -p sclients/
+          echo "{\"triggered_at\": \"$(date +'%Y-%m-%dT%H:%M:%S')\"}" > sclients/trigger_$(date +'%Y%m%d_%H%M%S').json
+          echo "Trigger file created:"
+          ls -l sclients/
 
       # 3. Fetch submissions from Fillout API
       - name: Fetch submissions from Fillout
@@ -51,17 +55,17 @@ jobs:
           echo "Processed submissions saved in fillout_data:"
           ls -l fillout_data/
 
-      # 6. Commit and Push Processed Data
-      - name: Commit and Push Processed Data
+      # 6. Commit and Push Data
+      - name: Commit and Push Trigger and Processed Data
         run: |
-          echo "Committing and pushing processed data..."
+          echo "Committing and pushing trigger and processed data..."
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add fillout_data/
+          git add sclients/ fillout_data/
           if git diff-index --quiet HEAD --; then
             echo "No changes to commit. Skipping commit step."
           else
-            git commit -m "Add processed submissions from Fillout"
+            git commit -m "Add trigger file and processed submissions"
             git push
           fi
         env:
