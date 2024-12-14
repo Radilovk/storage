@@ -12,17 +12,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Log incoming client payload
+        run: |
+          echo "Incoming client payload:"
+          echo "${{ toJson(github.event.client_payload) }}"
+
+      - name: Create trigger file in sclients
+        run: |
+          mkdir -p sclients/
+          echo "${{ toJson(github.event.client_payload) }}" > sclients/trigger_$(date +'%Y%m%d_%H%M%S').json
+          echo "Trigger file created in sclients/"
+          ls -l sclients/
+
       - name: Fetch submissions from Fillout
         run: |
           curl -H "Authorization: Bearer ${{ secrets.FILL_OUT_API_KEY }}" \
           "https://api.fillout.com/v1/api/forms/2akCiouB4Bus/submissions" \
           -o submissions.json
 
-      - name: Verify fillout_data directory
+      - name: Log fetched JSON data
         run: |
-          mkdir -p fillout_data
-          echo "Contents of fillout_data before processing:"
-          ls -l fillout_data
+          echo "Fetched JSON data:"
+          cat submissions.json
 
       - name: Process and Save Submissions
         run: |
@@ -30,25 +41,15 @@ jobs:
           jq -c 'if type=="array" then .[] elif .data then .data[] else empty end' submissions.json | while read submission; do
             id=$(echo "$submission" | jq -r '.id // "UnknownID"')
             date=$(echo "$submission" | jq -r '.createdAt // "19700101T000000"' | sed 's/[^0-9]//g')
-            timestamp=$(date +%s)
-            echo "$submission" > fillout_data/${id}_${date}_${timestamp}.json
+            echo "$submission" > fillout_data/${id}_${date}.json
           done
-
-      - name: Verify fillout_data after processing
-        run: |
-          echo "Contents of fillout_data after processing:"
-          ls -l fillout_data
 
       - name: Commit and Push Processed Data
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add fillout_data/
-          if git diff-index --quiet HEAD --; then
-            echo "No changes to commit."
-          else
-            git commit -m "Add processed data from Fillout"
-            git push
-          fi
+          git add sclients/ fillout_data/
+          git commit -m "Add trigger and processed data from Fillout"
+          git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
