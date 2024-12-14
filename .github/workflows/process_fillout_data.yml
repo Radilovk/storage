@@ -12,19 +12,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Temporarily ignore submissions.json
-        run: echo "submissions.json" >> .git/info/exclude
-
       - name: Fetch submissions from Fillout
         run: |
           curl -H "Authorization: Bearer ${{ secrets.FILL_OUT_API_KEY }}" \
           "https://api.fillout.com/v1/api/forms/2akCiouB4Bus/submissions" \
           -o submissions.json
 
-      - name: Log JSON data
+      - name: Verify fillout_data directory
         run: |
-          echo "Submissions JSON data:"
-          cat submissions.json
+          mkdir -p fillout_data
+          echo "Contents of fillout_data before processing:"
+          ls -l fillout_data
 
       - name: Process and Save Submissions
         run: |
@@ -32,15 +30,25 @@ jobs:
           jq -c 'if type=="array" then .[] elif .data then .data[] else empty end' submissions.json | while read submission; do
             id=$(echo "$submission" | jq -r '.id // "UnknownID"')
             date=$(echo "$submission" | jq -r '.createdAt // "19700101T000000"' | sed 's/[^0-9]//g')
-            echo "$submission" > fillout_data/${id}_${date}.json
+            timestamp=$(date +%s)
+            echo "$submission" > fillout_data/${id}_${date}_${timestamp}.json
           done
+
+      - name: Verify fillout_data after processing
+        run: |
+          echo "Contents of fillout_data after processing:"
+          ls -l fillout_data
 
       - name: Commit and Push Processed Data
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add fillout_data/
-          git commit -m "Add processed data from Fillout"
-          git push
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit."
+          else
+            git commit -m "Add processed data from Fillout"
+            git push
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
