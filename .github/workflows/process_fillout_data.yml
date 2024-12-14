@@ -12,8 +12,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Ignore submissions.json
-        run: echo "submissions.json" >> .gitignore
+      - name: Temporarily ignore submissions.json
+        run: echo "submissions.json" >> .git/info/exclude
 
       - name: Fetch submissions from Fillout
         run: |
