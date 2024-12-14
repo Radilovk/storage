@@ -18,21 +18,24 @@ jobs:
           "https://api.fillout.com/v1/api/forms/2akCiouB4Bus/submissions" \
           -o submissions.json
 
-      - name: Create Trigger File
+      - name: Log contents of submissions.json
         run: |
-          mkdir -p sclients/
-          jq -c '.[] | {id: .id, createdAt: .createdAt}' submissions.json | while read submission; do
-            id=$(echo "$submission" | jq -r '.id // "UnknownID"')
-            date=$(echo "$submission" | jq -r '.createdAt // "19700101T000000"' | sed 's/[^0-9]//g')
-            echo "$submission" > sclients/trigger_${id}_${date}.json
-          done
-          echo "Trigger files created:"
-          ls -l sclients/
+          echo "Contents of submissions.json:"
+          cat submissions.json
 
-      - name: Process and Save Submissions
+      - name: Validate submissions.json
+        run: |
+          if [ -s submissions.json ]; then
+            echo "submissions.json is not empty."
+          else
+            echo "Error: submissions.json is empty or invalid."
+            exit 1
+          fi
+
+      - name: Process and Save Each Submission
         run: |
           mkdir -p fillout_data
-          jq -c '.[]' submissions.json | while read submission; do
+          jq -c 'if type=="array" then .[] elif .data then .data[] else empty end' submissions.json | while read submission; do
             id=$(echo "$submission" | jq -r '.id // "UnknownID"')
             date=$(echo "$submission" | jq -r '.createdAt // "19700101T000000"' | sed 's/[^0-9]//g')
             echo "$submission" > fillout_data/${id}_${date}.json
@@ -44,8 +47,8 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add sclients/ fillout_data/
-          git commit -m "Add processed submissions and trigger files from Fillout"
+          git add fillout_data/
+          git commit -m "Add processed submissions from Fillout"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
