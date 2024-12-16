@@ -1,0 +1,13 @@
+{
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "address": "123 Main Street, Suite 100, New York, NY, USA",
+  "phone": "+1-305-123-4567",
+  "company": "Example Co.",
+  "position": "Manager",
+  "contracts": {
+    "main": "john.doe@example.com",
+    "support": "usersupport@example.com"
+  },
+  "notes": "This is a sample client record."
+}
