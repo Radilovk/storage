@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ефекти от ЕМС тренировка</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #fff;
+            text-align: center;
+        }
+        .container {
+            max-width: 90%;
+            width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #111;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        }
+        h1 {
+            color: #ff0000;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 30px;
+        }
+        .benefits {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .benefit {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 15px;
+            border-left: 5px solid #ff0000;
+            background-color: #222;
+            font-size: 18px;
+            line-height: 1.5;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .benefit strong {
+            min-width: 260px;
+            display: inline-block;
+            color: #ff4444;
+        }
+        .benefit::before {
+            content: "✔";
+            color: #ff0000;
+            font-size: 20px;
+            margin-right: 15px;
+        }
+        .back-button {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 12px 25px;
+            background-color: #ff0000;
+            color: #fff;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .back-button:hover {
+            background-color: #cc0000;
+        }
+        @media screen and (max-width: 768px) {
+            .container {
+                width: 95%;
+                padding: 15px;
+            }
+            .benefit {
+                font-size: 16px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .benefit strong {
+                min-width: auto;
+                display: block;
+                margin-bottom: 5px;
+            }
+            .back-button {
+                font-size: 16px;
+                padding: 10px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ефекти от ЕМС тренировка</h1>
+        <div class="benefits">
+            <div class="benefit"> <strong>Бърз и ефективен метод:</strong> 20 минути активна част се равняват на 90 минути стандартна тренировка.</div>
+            <div class="benefit"> <strong>Оформяне и стягане:</strong> Активира дълбоките мускули и ги тонизира, без да увеличава обема им.</div>
+            <div class="benefit"> <strong>Отслабване и метаболизъм:</strong> 3 пъти по-интензивно изгаряне на калории и повишено изгаряне на мазнини до 48 часа след тренировка.</div>
+            <div class="benefit"> <strong>Антицелулитен ефект:</strong> Подобрява кръвообращението, намалява задържането на течности и подпомага лимфния дренаж.</div>
+            <div class="benefit"> <strong>Антиейджинг ефект:</strong> Стимулира колагеновия синтез, заглажда кожата и подобрява нейната еластичност.</div>
+            <div class="benefit"> <strong>Безопасно натоварване:</strong> Няма риск от прекомерно натоварване на ставите, подходящо за хора с болки в гърба, коленете или раменете.</div>
+            <div class="benefit"> <strong>След бременност:</strong> Помага за стягане на корема и таза, без да се натоварва кръста и ставите.</div>
+            <div class="benefit"> <strong>Рехабилитация:</strong> Използва се във физиотерапията за активиране на отслабени мускули.</div>
+            <div class="benefit"> <strong>За заети хора:</strong> Само 2 пъти седмично са достатъчни за видими резултати.</div>
+        </div>
+        
+        <button class="back-button" onclick="goBack()">⬅ Назад</button>
+    </div>
+    
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+    </script>
+</body>
+</html>
